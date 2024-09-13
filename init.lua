@@ -163,6 +163,26 @@ require("lazy").setup({
     end
   },
 
+  -- nvim-dap-ui
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = { "mfussenegger/nvim-dap","nvim-nio" },
+    config = function()
+      local dap, dapui = require("dap"), require("dapui")
+      dapui.setup()
+
+      dap.listeners.after.event_initialized["dapui_config"] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated["dapui_config"] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited["dapui_config"] = function()
+        dapui.close()
+      end
+    end
+  },
+
   -- CMake
   {
     "Civitasv/cmake-tools.nvim",
@@ -173,10 +193,6 @@ require("lazy").setup({
         cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
         cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
         cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
-        -- support macro expansion:
-        --       ${kit}
-        --       ${kitGenerator}
-        --       ${variant:xx}
         cmake_build_directory = function()
           if vim.fn.has("win32") == 1 then
             return "out\\${variant:buildType}"
@@ -437,11 +453,6 @@ require("lazy").setup({
   {
     "ludovicchabant/vim-gutentags",
     config = function()
-      vim.g.gutentags_cache_dir = '~/.cache/nvim/tags'
-      vim.g.gutentags_generate_on_new = 1
-      vim.g.gutentags_generate_on_write = 1
-      vim.g.gutentags_generate_on_missing = 1
-      vim.g.gutentags_generate_on_empty_buffer = 0
     end
   },
 
@@ -621,9 +632,20 @@ require("lazy").setup({
       vim.api.nvim_set_keymap('t', '<esc>', [[<C-\><C-n>]], { noremap = true, silent = true })
     end
   },
+
+  -- Comment.nvim
+  {
+    "numToStr/Comment.nvim",
+    config = function()
+      require("Comment").setup()
+    end
+  },
 })
+
+-- Сочетания клавиш для nvim-dap-ui
+vim.api.nvim_set_keymap('n', '<leader>du', '<cmd>lua require("dapui").toggle()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>de', '<cmd>lua require("dapui").eval()<CR>', { noremap = true, silent = true })
 
 -- Включение подсветки синтаксиса
 vim.cmd("syntax on")
 vim.cmd("filetype plugin indent on")
-
