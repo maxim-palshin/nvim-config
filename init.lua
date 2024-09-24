@@ -1,4 +1,3 @@
--- Установка lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -12,303 +11,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Настройки для C++
-vim.opt.tabstop = 4
-vim.opt.shiftwidth = 4
-vim.opt.expandtab = true
-vim.opt.autoindent = true
-vim.opt.smartindent = true
-vim.opt.cindent = true
-vim.opt.cinoptions = ":0,l1,t0,(0"
-
--- Включение относительной нумерации строк
 vim.opt.relativenumber = true
 vim.opt.number = true
 
--- Настройка системного буфера обмена
-vim.opt.clipboard = "unnamedplus"
-
--- Настройка <leader>
-vim.g.mapleader = " "
-
--- Плагины
-require("lazy").setup({
-  -- Автодополнение
-  {
-    "hrsh7th/nvim-cmp",
-    dependencies = {
-      "hrsh7th/cmp-nvim-lsp",
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "hrsh7th/cmp-cmdline",
-      "L3MON4D3/LuaSnip",
-      "saadparwaiz1/cmp_luasnip",
-    },
-    config = function()
-      local cmp = require("cmp")
-      local luasnip = require("luasnip")
-
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
-        },
-        mapping = {
-          ["<C-b>"] = cmp.mapping(cmp.mapping.scroll_docs(-4), { "i", "c" }),
-          ["<C-f>"] = cmp.mapping(cmp.mapping.scroll_docs(4), { "i", "c" }),
-          ["<C-Space>"] = cmp.mapping(cmp.mapping.complete(), { "i", "c" }),
-          ["<C-y>"] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
-          ["<C-e>"] = cmp.mapping({
-            i = cmp.mapping.abort(),
-            c = cmp.mapping.close(),
-          }),
-          ["<CR>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
-          ["<Up>"] = cmp.mapping.select_prev_item(),
-          ["<Down>"] = cmp.mapping.select_next_item(),
-        },
-        sources = cmp.config.sources({
-          { name = "nvim_lsp" },
-          { name = "luasnip" },
-          { name = "buffer" },
-          { name = "path" },
-        }),
-      })
-
-      -- Use buffer source for `/` (if you enabled `native_menu`, this won't work anymore).
-      cmp.setup.cmdline("/", {
-        sources = {
-          { name = "buffer" },
-        },
-      })
-
-      -- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
-      cmp.setup.cmdline(":", {
-        sources = cmp.config.sources({
-          { name = "path" },
-        }, {
-          { name = "cmdline" },
-        }),
-      })
-    end
-  },
-
-  -- LSP
-  {
-    "neovim/nvim-lspconfig",
-    config = function()
-      local lspconfig = require("lspconfig")
-      lspconfig.clangd.setup{}
-      lspconfig.ccls.setup{}
-      lspconfig.pyright.setup{}
-      lspconfig.r_language_server.setup{}
-    end
-  },
-
-  -- Форматирование
-  {
-    "jose-elias-alvarez/null-ls.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    config = function()
-      local null_ls = require("null-ls")
-
-      null_ls.setup({
-        sources = {
-          null_ls.builtins.formatting.clang_format,
-          null_ls.builtins.formatting.black,
-          null_ls.builtins.formatting.styler,
-        },
-        on_attach = function(client, bufnr)
-          if client.resolved_capabilities and client.resolved_capabilities.document_formatting then
-            vim.cmd([[
-              augroup Format
-                autocmd! * <buffer>
-                autocmd BufWritePre <buffer> lua vim.lsp.buf.formatting_sync()
-              augroup END
-            ]])
-          end
-        end,
-      })
-
-      -- Сочетания клавиш для форматирования
-      vim.api.nvim_set_keymap('n', '<leader>f', '<cmd>lua vim.lsp.buf.formatting()<CR>', { noremap = true, silent = true })
-      vim.api.nvim_set_keymap('v', '<leader>f', '<cmd>lua vim.lsp.buf.range_formatting()<CR>', { noremap = true, silent = true })
-    end
-  },
-
-  -- CMake
-  {
-    "Civitasv/cmake-tools.nvim",
-    config = function()
-      require("cmake-tools").setup {
-        cmake_command = "cmake", -- this is used to specify cmake command path
-        cmake_use_preset = true,
-        cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
-        cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" }, -- this will be passed when invoke `CMakeGenerate`
-        cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
-        cmake_build_directory = function()
-          if vim.fn.has("win32") == 1 then
-            return "out\\${variant:buildType}"
-          end
-          return "out/${variant:buildType}"
-        end, -- this is used to specify generate directory for cmake, allows macro expansion, can be a string or a function returning the string, relative to cwd.
-        cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
-        cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
-        cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
-        cmake_variants_message = {
-          short = { show = true }, -- whether to show short message
-          long = { show = true, max_length = 40 }, -- whether to show long message
-        },
-        cmake_dap_configuration = { -- debug settings for cmake
-          name = "cpp",
-          type = "codelldb",
-          request = "launch",
-          stopOnEntry = false,
-          runInTerminal = true,
-          console = "integratedTerminal",
-        },
-        cmake_executor = { -- executor to use
-          name = "quickfix", -- name of the executor
-          opts = {}, -- the options the executor will get, possible values depend on the executor type. See `default_opts` for possible values.
-          default_opts = { -- a list of default and possible values for executors
-            quickfix = {
-              show = "always", -- "always", "only_on_error"
-              position = "belowright", -- "vertical", "horizontal", "leftabove", "aboveleft", "rightbelow", "belowright", "topleft", "botright", use `:h vertical` for example to see help on them
-              size = 10,
-              encoding = "utf-8", -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
-              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
-            },
-            toggleterm = {
-              direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
-              close_on_exit = false, -- whether close the terminal when exit
-              auto_scroll = true, -- whether auto scroll to the bottom
-              singleton = true, -- single instance, autocloses the opened one, if present
-            },
-            overseer = {
-              new_task_opts = {
-                strategy = {
-                  "toggleterm",
-                  direction = "horizontal",
-                  autos_croll = true,
-                  quit_on_exit = "success"
-                }
-              }, -- options to pass into the `overseer.new_task` command
-              on_new_task = function(task)
-                require("overseer").open(
-                  { enter = false, direction = "right" }
-                )
-              end,   -- a function that gets overseer.Task when it is created, before calling `task:start`
-            },
-            terminal = {
-              name = "Main Terminal",
-              prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
-              split_direction = "horizontal", -- "horizontal", "vertical"
-              split_size = 11,
-
-              -- Window handling
-              single_terminal_per_instance = true, -- Single viewport, multiple windows
-              single_terminal_per_tab = true, -- Single viewport per tab
-              keep_terminal_static_location = true, -- Static location of the viewport if available
-
-              -- Running Tasks
-              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-              focus = false, -- Focus on terminal when cmake task is launched.
-              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
-            }, -- terminal executor uses the values in cmake_terminal
-          },
-        },
-        cmake_runner = { -- runner to use
-          name = "terminal", -- name of the runner
-          opts = {}, -- the options the runner will get, possible values depend on the runner type. See `default_opts` for possible values.
-          default_opts = { -- a list of default and possible values for runners
-            quickfix = {
-              show = "always", -- "always", "only_on_error"
-              position = "belowright", -- "bottom", "top"
-              size = 10,
-              encoding = "utf-8",
-              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
-            },
-            toggleterm = {
-              direction = "float", -- 'vertical' | 'horizontal' | 'tab' | 'float'
-              close_on_exit = false, -- whether close the terminal when exit
-              auto_scroll = true, -- whether auto scroll to the bottom
-              singleton = true, -- single instance, autocloses the opened one, if present
-            },
-            overseer = {
-              new_task_opts = {
-                strategy = {
-                  "toggleterm",
-                  direction = "horizontal",
-                  autos_croll = true,
-                  quit_on_exit = "success"
-                }
-              }, -- options to pass into the `overseer.new_task` command
-              on_new_task = function(task)
-              end,   -- a function that gets overseer.Task when it is created, before calling `task:start`
-            },
-            terminal = {
-              name = "Main Terminal",
-              prefix_name = "[CMakeTools]: ", -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
-              split_direction = "horizontal", -- "horizontal", "vertical"
-              split_size = 11,
-
-              -- Window handling
-              single_terminal_per_instance = true, -- Single viewport, multiple windows
-              single_terminal_per_tab = true, -- Single viewport per tab
-              keep_terminal_static_location = true, -- Static location of the viewport if available
-
-              -- Running Tasks
-              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
-              focus = false, -- Focus on terminal when cmake task is launched.
-              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
-            },
-          },
-        },
-        cmake_notifications = {
-          runner = { enabled = true },
-          executor = { enabled = true },
-          spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }, -- icons used for progress display
-          refresh_rate_ms = 100, -- how often to iterate icons
-        },
-        cmake_virtual_text_support = true, -- Show the target related to current file using virtual text (at right corner)
-      }
-    end
-  },
-
-  -- Git
-  {
-    "tpope/vim-fugitive",
-  },
-  {
-    "airblade/vim-gitgutter",
-  },
-  {
-    "lewis6991/gitsigns.nvim",
-    config = function()
-      require("gitsigns").setup()
-    end
-  },
-
-  -- Файловый менеджер
-  {
-    "nvim-tree/nvim-tree.lua",
-    config = function()
-      require("nvim-tree").setup({
-        sort_by = "case_sensitive",
-        view = {
-          width = 30,
-        },
-        renderer = {
-          group_empty = true,
-        },
-        filters = {
-          dotfiles = true,
-        },
-      })
-    end
-  },
-
-  -- Статусная строка
+require('lazy').setup({
   {
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -394,46 +100,15 @@ require("lazy").setup({
     end
   },
 
-  -- Сниппеты
-  {
-    "L3MON4D3/LuaSnip",
-    config = function()
-      require("luasnip.loaders.from_vscode").lazy_load()
-    end
-  },
+  { 'mg979/vim-visual-multi', branch = 'master' },
 
-  -- Автоматическое создание тегов
-  {
-    "ludovicchabant/vim-gutentags",
-    config = function()
-    end
-  },
-
-  -- Поиск и навигация
-  {
-    "nvim-telescope/telescope.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    config = function()
-      require("telescope").setup({
-        defaults = {
-          mappings = {
-            i = {
-              ["<C-u>"] = false,
-              ["<C-d>"] = false,
-            },
-          },
-        },
-      })
-    end
-  },
-
-  -- Подсветка синтаксиса
+  -- Treesitter
   {
     "nvim-treesitter/nvim-treesitter",
     run = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "c", "cpp", "lua", "vim", "vimdoc", "query", "python", "r", "cmake" },
+        ensure_installed = { "lua", "vim", "vimdoc", "query" },
         sync_install = false,
         auto_install = true,
         highlight = {
@@ -444,65 +119,30 @@ require("lazy").setup({
     end
   },
 
-  -- Уведомления
+  -- Файловый менеджер
   {
-    "rcarriga/nvim-notify",
+    "nvim-tree/nvim-tree.lua",
     config = function()
-      require("notify").setup({
-        background_colour = "#000000",
-      })
-    end
-  },
-
-  -- Автоматическое закрытие скобок
-  {
-    "windwp/nvim-autopairs",
-    config = function()
-      require("nvim-autopairs").setup{}
-    end
-  },
-
-  -- Карта кода
-  {
-    "SmiteshP/nvim-navic",
-    dependencies = { "neovim/nvim-lspconfig" },
-    config = function()
-      require("nvim-navic").setup({
-        icons = {
-          File          = " ",
-          Module        = " ",
-          Namespace     = " ",
-          Package       = " ",
-          Class         = " ",
-          Method        = " ",
-          Property      = " ",
-          Field         = " ",
-          Constructor   = " ",
-          Enum          = "練",
-          Interface     = "練",
-          Function      = " ",
-          Variable      = " ",
-          Constant      = " ",
-          String        = " ",
-          Number        = " ",
-          Boolean       = "◩ ",
-          Array         = " ",
-          Object        = " ",
-          Key           = " ",
-          Null          = "ﳠ ",
-          EnumMember    = " ",
-          Struct        = " ",
-          Event         = " ",
-          Operator      = " ",
-          TypeParameter = " ",
+      require("nvim-tree").setup({
+        sort_by = "case_sensitive",
+        view = {
+          width = 30,
         },
-        highlight = true,
-        separator = " > ",
-        depth_limit = 0,
-        depth_limit_indicator = "..",
+        renderer = {
+          group_empty = true,
+        },
+        filters = {
+          dotfiles = true,
+        },
       })
     end
   },
+
+  -- Поиск и навигация
+     {
+    'nvim-telescope/telescope.nvim',
+      dependencies = { 'nvim-lua/plenary.nvim' }
+    },
 
   -- Строка буферов
   {
@@ -584,21 +224,6 @@ require("lazy").setup({
       vim.api.nvim_set_keymap('n', '<leader>t', '<cmd>ToggleTerm<CR>', { noremap = true, silent = true })
       vim.api.nvim_set_keymap('t', '<esc>', [[<C-\><C-n>]], { noremap = true, silent = true })
     end
-  },
-
-  -- Comment.nvim
-  {
-    "numToStr/Comment.nvim",
-    config = function()
-      require("Comment").setup()
-    end
-  },
+  }
 })
 
--- Сочетания клавиш для nvim-dap-ui
-vim.api.nvim_set_keymap('n', '<leader>du', '<cmd>lua require("dapui").toggle()<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>de', '<cmd>lua require("dapui").eval()<CR>', { noremap = true, silent = true })
-
--- Включение подсветки синтаксиса
-vim.cmd("syntax on")
-vim.cmd("filetype plugin indent on")
