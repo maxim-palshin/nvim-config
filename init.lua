@@ -43,6 +43,7 @@ require("lazy").setup({
       "hrsh7th/cmp-cmdline",
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
+      "terryma/vim-multiple-cursors"
     },
     config = function()
       local cmp = require("cmp")
@@ -462,48 +463,6 @@ require("lazy").setup({
     end
   },
 
-  -- Карта кода
-  {
-    "SmiteshP/nvim-navic",
-    dependencies = { "neovim/nvim-lspconfig" },
-    config = function()
-      require("nvim-navic").setup({
-        icons = {
-          File          = " ",
-          Module        = " ",
-          Namespace     = " ",
-          Package       = " ",
-          Class         = " ",
-          Method        = " ",
-          Property      = " ",
-          Field         = " ",
-          Constructor   = " ",
-          Enum          = "練",
-          Interface     = "練",
-          Function      = " ",
-          Variable      = " ",
-          Constant      = " ",
-          String        = " ",
-          Number        = " ",
-          Boolean       = "◩ ",
-          Array         = " ",
-          Object        = " ",
-          Key           = " ",
-          Null          = "ﳠ ",
-          EnumMember    = " ",
-          Struct        = " ",
-          Event         = " ",
-          Operator      = " ",
-          TypeParameter = " ",
-        },
-        highlight = true,
-        separator = " > ",
-        depth_limit = 0,
-        depth_limit_indicator = "..",
-      })
-    end
-  },
-
   -- Строка буферов
   {
     "akinsho/bufferline.nvim",
@@ -594,6 +553,8 @@ require("lazy").setup({
     end
   },
 })
+
+
 
 -- Сочетания клавиш для nvim-dap-ui
 vim.api.nvim_set_keymap('n', '<leader>du', '<cmd>lua require("dapui").toggle()<CR>', { noremap = true, silent = true })
